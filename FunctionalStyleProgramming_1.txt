@@ -1,0 +1,45 @@
+Working with mapMulti()
+
+Starting with JDK 16, the Stream API was enriched with a new intermediate operation, named mapMulti(). This operation is represented by the following default method in the Stream interface:
+
+default <R> Stream<R> mapMulti (
+  BiConsumer<? super T, ? super Consumer<R>> mapper)
+  
+The below uses a combination of filter() and map() to filter even integers and double their value:
+
+List<Integer> integers = List.of(3, 2, 5, 6, 7, 8);
+List<Integer> evenDoubledClassic = integers.stream()
+  .filter(i -> i % 2 == 0)
+  .map(i -> i * 2)
+  .collect(toList());
+  
+The same result can be obtained via mapMulti() as follows:
+
+List<Integer> evenDoubledMM = integers.stream()
+  .<Integer>mapMulti((i, consumer) -> {
+     if (i % 2 == 0) {
+       consumer.accept(i * 2);
+     }
+  })
+  .collect(toList());
+  
+For instance, if we plan to sum the even integers, then using mapMultiToInt() is a better choice than mapMulti(), since we can skip the type-witness and work only with a primitive int:
+
+int evenDoubledAndSumMM = integers.stream()
+  .mapMultiToInt((i, consumer) -> {
+     if (i % 2 == 0) {
+       consumer.accept(i * 2);
+     }
+  })
+  .sum();
+  
+On the other hand, whenever you need a Stream<T> instead of Double/Long/IntStream, you still need to rely on mapToObj() or boxed():
+
+List<Integer> evenDoubledMM = integers.stream()
+  .mapMultiToInt((i, consumer) -> {
+    if (i % 2 == 0) {
+      consumer.accept(i * 2);
+    }
+  })
+  .mapToObj(i -> i) // or, .boxed()
+  .collect(toList());
