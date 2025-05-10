@@ -1,0 +1,44 @@
+Once you get familiar with mapMulti(), you start to realize that it is pretty similar to the well-known flatMap(), which is useful to flatten a nested Stream<Stream<R>> model. Let’s consider the following one-to-many relationship:
+
+public class Author {
+  private final String name;
+  private final List<Book> books;
+  ...
+}
+public class Book {
+    
+  private final String title;
+  private final LocalDate published;
+  ...
+}
+
+we have the following simple model for mapping an author and a single book:
+
+public class Bookshelf {
+  private final String author;
+  private final String book;
+  ...
+}
+
+List<Bookshelf> bookshelfMM = authors.stream()
+  .<Bookshelf>mapMulti((author, consumer) -> {
+     for (Book book : author.getBooks()) {
+       consumer.accept(new Bookshelf(
+         author.getName(), book.getTitle()));
+     }
+  })
+  .collect(Collectors.toList());
+
+List<Bookshelf> bookshelfGt2005MM = authors.stream()
+  .<Bookshelf>mapMulti((author, consumer) -> {
+    for (Book book : author.getBooks()) {
+      if (book.getPublished().getYear() > 2005) {
+        consumer.accept(new Bookshelf(
+          author.getName(), book.getTitle()));
+      }
+    }
+  })
+  .collect(Collectors.toList());
+
+The mapMulti() operation is also useful when the imperative approach is preferable against the stream approach. This statement is formulated in the official documentation as follows: “When it is easier to use an imperative approach for generating result elements than it is to return them in the form of a Stream.”
+
