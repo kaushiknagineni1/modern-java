@@ -1,0 +1,42 @@
+public class Post {
+    
+  private final int id;
+  private final String title;
+  private final String tags;
+  public Post(int id, String title, String tags) {
+    this.id = id;
+    this.title = title;
+    this.tags = tags;
+  }
+  ...
+  public static List<String> allTags(Post post) {
+        
+    return Arrays.asList(post.getTags().split("#"));
+  }
+
+List<Post> posts = List.of(
+  new Post(1, "Running jOOQ", "#database #sql #rdbms"),
+  new Post(2, "I/O files in Java", "#io #storage #rdbms"),
+  new Post(3, "Hibernate Course", "#jpa #database #rdbms"),
+  new Post(4, "Hooking Java Sockets", "#io #network"),
+  new Post(5, "Analysing JDBC transactions", "#jdbc #rdbms")
+);
+
+Our goal is to extract from this list a Map<String, List<Integer>>, containing, for each tag (key) the list of posts (value). For instance, for the tag #database, we have articles 1 and 3; for tag #rdbms, we have articles 1, 2, 3, and 5, and so on.
+
+Map<String, List<Integer>> result = posts.stream()
+  .flatMap(post -> Post.allTags(post).stream()
+  .map(t -> entry(t, post.getId())))
+  .collect(groupingBy(Entry::getKey,
+              mapping(Entry::getValue, toList())));
+
+starting with JDK 16, we can use mapMulti(). So, we can rewrite the previous snippet as follows:
+
+Map<String, List<Integer>> resultMulti = posts.stream()
+  .<Map.Entry<String, Integer>>mapMulti((post, consumer) -> {
+      for (String tag : Post.allTags(post)) {
+             consumer.accept(entry(tag, post.getId()));
+      }
+  })
+  .collect(groupingBy(Entry::getKey,
+              mapping(Entry::getValue, toList())));
